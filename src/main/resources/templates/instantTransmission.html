@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>秒传文件上传</title>
+</head>
+<body>
+<input type='file' id='fileInput'/>
+<button onclick='uploadFile()'>上传文件</button>
+
+<script>
+    async function uploadFile() {
+        const fileInput = document.getElementById('fileInput');
+        const file = fileInput.files[0];
+        if (!file) {
+            alert('请选择文件');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const response = await fetch('/upload', {
+                method: 'POST',
+                body: formData
+            });
+            const result = await response.json();
+            if (result.success) {
+                alert('文件上传成功');
+            } else {
+                alert('文件上传失败');
+            }
+        } catch (error) {
+            console.error('文件上传失败:', error);
+        }
+    }
+</script>
+</body>
+</html>
