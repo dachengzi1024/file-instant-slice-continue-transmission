@@ -3,7 +3,7 @@ package com.cxm.exception;
 /**
  * 业务异常
  * 
- * @author ruoyi
+ * @author cxm
  */
 public final class ServiceException extends RuntimeException
 {
