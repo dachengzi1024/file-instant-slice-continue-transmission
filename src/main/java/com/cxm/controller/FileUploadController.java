@@ -1,6 +1,8 @@
 package com.cxm.controller;
 
+import com.cxm.utils.MapUtils;
 import com.cxm.utils.RedisCache;
+import com.cxm.utils.StreamTools;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.ResponseEntity;
@@ -54,14 +56,14 @@ public class FileUploadController {
                 return "文件正在上传";
             }
 
-        } catch (IOException | NoSuchAlgorithmException e) {
+        } catch (Exception e) {
             return "文件上传失败";
         }
     }
 
-    private String getfileMd5(InputStream inputStream) throws NoSuchAlgorithmException, IOException {
+    private String getfileMd5(InputStream inputStream) throws NoSuchAlgorithmException, IOException, Exception {
         MessageDigest digest = MessageDigest.getInstance("MD5");
-        byte[] hash = digest.digest(inputStream.readAllBytes());
+        byte[] hash = digest.digest(StreamTools.readInputStream(inputStream));
         return String.format("%032x", new BigInteger(1, hash));
     }
 
@@ -75,7 +77,7 @@ public class FileUploadController {
      * @throws IOException
      */
     @PostMapping("/uploadBig")
-    public ResponseEntity<Map<String, String>> UploadBig(@RequestParam Long chunkSize, @RequestParam Integer totalNumber, @RequestParam Long chunkNumber, @RequestParam String md5, @RequestParam MultipartFile file) throws IOException {
+    public ResponseEntity<Map<String, String>> UploadBig(@RequestParam Long chunkSize, @RequestParam Integer totalNumber, @RequestParam Long chunkNumber, @RequestParam String md5, @RequestParam MultipartFile file) throws IOException, Exception {
         //文件存放位置
         String dstFile = String.format("%s\\%s\\%s.%s", UPLOAD_PATH, md5, md5, StringUtils.getFilenameExtension(file.getOriginalFilename()));
         //上传分片信息存放位置
@@ -85,18 +87,18 @@ public class FileUploadController {
         if (!dir.exists()) {
             dir.mkdir();
             byte[] bytes = new byte[totalNumber];
-            Files.write(Path.of(confFile), bytes);
+            Files.write(Paths.get(confFile), bytes);
         }
 
         try (RandomAccessFile randomAccessFile = new RandomAccessFile(dstFile, "rw");
              RandomAccessFile randomAccessConfFile = new RandomAccessFile(confFile, "rw");
              InputStream inputStream = file.getInputStream()) {
             randomAccessFile.seek(chunkNumber*chunkSize);
-            randomAccessFile.write(inputStream.readAllBytes());
+            randomAccessFile.write(StreamTools.readInputStream(inputStream));
             randomAccessConfFile.seek(chunkNumber);
             randomAccessConfFile.write(1);
         }
-        return ResponseEntity.ok(Map.of("path", dstFile));
+        return ResponseEntity.ok(MapUtils.of("path", dstFile));
     }
     /**
      * 获取文件分片状态，检测文件MD5合法性
@@ -105,9 +107,9 @@ public class FileUploadController {
     @RequestMapping("/checkFile")
     public  ResponseEntity<Map<String, String>> checkFile(@RequestParam String md5) throws Exception {
         String uploadPath = String.format("%s\\%s\\%s.conf", UPLOAD_PATH, md5, md5);
-        Path path = Path.of(uploadPath);
+        Path path = Paths.get(uploadPath);
         if (!Files.exists(path.getParent())) {
-            return ResponseEntity.ok(Map.of("msg", "文件未上传"));
+            return ResponseEntity.ok(MapUtils.of("msg", "文件未上传"));
         }
         StringBuilder stringBuilder = new StringBuilder();
         byte[] bytes = Files.readAllBytes(path);
@@ -124,13 +126,13 @@ public class FileUploadController {
                     try (InputStream inputStream = new FileInputStream(f)) {
                         String md5pwd = DigestUtils.md5DigestAsHex(inputStream);
                         if (!md5pwd.equalsIgnoreCase(md5))
-                            return ResponseEntity.ok(Map.of("msg", "文件上传失败"));
+                            return ResponseEntity.ok(MapUtils.of("msg", "文件上传失败"));
                     }
                 }
             }
-            return ResponseEntity.ok(Map.of("path", filePath));
+            return ResponseEntity.ok(MapUtils.of("path", filePath));
         } else {
-            return  ResponseEntity.ok(Map.of("chucks", stringBuilder.toString()));
+            return  ResponseEntity.ok(MapUtils.of("chucks", stringBuilder.toString()));
         }
     }
 }
