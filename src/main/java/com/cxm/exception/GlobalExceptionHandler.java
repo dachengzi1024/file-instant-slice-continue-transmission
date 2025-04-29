@@ -2,7 +2,6 @@ package com.cxm.exception;
 
 import com.cxm.config.AjaxResult;
 import com.cxm.utils.StringUtils;
-import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.validation.BindException;
@@ -13,10 +12,12 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
+import javax.servlet.http.HttpServletRequest;
+
 /**
  * 全局异常处理器
  * 
- * @author ruoyi
+ * @author cxm
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler
